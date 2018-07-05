@@ -1,0 +1,14 @@
+<h1> Show after login</h1>
+
+<% if(!currentUser){ %>
+            <li>
+              <a href="/">Login</a>
+            </li>
+            <li>
+                <a href="/signup">Register</a>
+            </li> 
+           <% } else { %>
+            <li>
+              <a href="/logout">Logout</a> 
+            </li>
+            <% } %>

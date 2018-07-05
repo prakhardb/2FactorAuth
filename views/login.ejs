@@ -1,0 +1,17 @@
+<h1>login</h1>
+
+<form action="/login" method="POST">
+    <input type="text" name="username" placeholder="Username">
+    <input type="password" name="password" placeholder="Password">
+    <button>Login</button>
+</form>
+
+<% if(!currentUser){ %>
+            <li>
+                <a href="/signup">Register</a>
+            </li> 
+           <% } else { %>
+            <li>
+              <a href="/logout">Logout</a> 
+            </li>
+            <% } %>

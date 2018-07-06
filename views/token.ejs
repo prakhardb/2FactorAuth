@@ -1,1 +1,6 @@
 <img src="<%= url %>" >
+<h2>Scan this code using Google Authenticator App</h2>
+<form action="/tokenverify" method="POST">
+    <input type="text" name="otp" placeholder="Enter OTP">
+    <button>Submit</button>
+</form>

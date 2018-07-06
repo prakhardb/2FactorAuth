@@ -6,12 +6,14 @@ var express     = require("express"),
     LocalStrategy = require("passport-local"),
     speakeasy   = require('speakeasy'),
      QRCode     = require('qrcode'),
+     ethers     = require("ethers"),
+     Wallet     = ethers.Wallet,
     pssportLocalMongoose = require("passport-local-mongoose"); 
   
     
 mongoose.connect("mongodb://prakhar:prakhar123@ds125841.mlab.com:25841/2fa-auth",{ useNewUrlParser: true });
 
-
+var auth = false;
 var app = express();
 
 app.use(require("express-session")({
@@ -37,7 +39,7 @@ app.get("/",function(req, res){
     res.render("login");
 });
 
-app.get("/home", isLoggedIn , function(req, res) {
+app.get("/home", isAuthen , function(req, res) {
    res.render("home"); 
 });
 
@@ -45,9 +47,20 @@ app.get("/signup", function(req, res) {
    res.render("signup"); 
 });
 
+app.get("/otp",isLoggedIn, function(req, res) {
+    res.render("otp");
+});
+
+var secret;
 //Signup logic
 app.post("/signup", function(req,res){
-    User.register(new User({username: req.body.username}), req.body.password, function(err,user){
+    //2 Factor Auth using speakeasy
+ secret = speakeasy.generateSecret();
+// Returns an object with secret.ascii, secret.hex, and secret.base32.
+// Also returns secret.otpauth_url, which we'll use later.
+User.two_factor_temp_secret = secret.base32;
+// Get the data URL of the authenticator URL
+    User.register(new User({username: req.body.username, secret:secret.base32}), req.body.password, function(err,user){
         if(err){
             console.log(err)
                 return res.render("signup");
@@ -61,7 +74,7 @@ app.post("/signup", function(req,res){
 //Login Logic
 app.post("/login",passport.authenticate("local",
 {
-  successRedirect: "/home",
+  successRedirect: "/otp",
   failureRedirect: "/"
 }),function(req,res){ 
 });
@@ -73,20 +86,15 @@ app.get("/logout",function(req,res){
 });
 
 function isLoggedIn(req,res,next){
+
   if(req.isAuthenticated()){
     return next();
   }
   res.redirect("/");
 }
 
-//2 Factor Auth using speakeasy
-var secret = speakeasy.generateSecret();
-// Returns an object with secret.ascii, secret.hex, and secret.base32.
-// Also returns secret.otpauth_url, which we'll use later.
-User.two_factor_temp_secret = secret.base32;
-console.log(User.two_factor_temp_secret);
-// Get the data URL of the authenticator URL
-app.get('/token', function(req, res) {
+
+app.get('/token',isLoggedIn, function(req, res) {
 QRCode.toDataURL(secret.otpauth_url, function(err, data_url) {
   if(err){
       console.log(err);
@@ -96,7 +104,62 @@ QRCode.toDataURL(secret.otpauth_url, function(err, data_url) {
   res.render('token',{url:data_url});
 });
 });
+//OTP verification
+app.post('/tokenverify',function(req,res){
+   var otp = req.body.otp
+   var base32secret = User.two_factor_temp_secret;
+   var verified = speakeasy.totp.verify({ secret: base32secret,
+                                       encoding: 'base32',
+                                       token: otp });
+     if(verified){
+         auth = true;
+         res.locals.currentUser.auth= true;
+         res.redirect("/home");
+     }
+     else{
+         res.redirect('/token');
+     }
+});
 
+app.post('/otp',function(req,res){
+    var otp = req.body.otp
+    var base32secret = res.locals.currentUser.secret;
+    var verified = speakeasy.totp.verify({ secret: base32secret,
+                                           encoding: 'base32',
+                                            token: otp });
+
+if(verified){
+        auth = true;
+         res.redirect("/home");
+     }
+     else{
+         req.logout();
+         res.redirect('/');
+     }
+});
+
+
+function isAuthen(req,res,next){
+    if(isLoggedIn|| (typeof(res.locals.currentUser.auth) !== 'undefined')){
+        if(auth){
+        return next();    
+        }
+        else {
+            res.redirect("/otp");
+        }
+    }
+    else {
+        req.logout();
+        res.redirect('/');
+    }
+}
+
+
+
+/*var privateKey = "x0123456789012345678901234567890123456789012345678901234858890123";
+var wallet = new Wallet(privateKey);
+
+console.log("Address: " + wallet.address);*/
 
 app.listen(process.env.PORT, process.env.IP, function(){
     console.log("server started");

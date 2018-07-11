@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>OTP Page</title>
+	<title>New Wallet</title>
 
 	 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
@@ -17,22 +17,21 @@
 		<div class="col s12 m4 offset-m4">
 			<div class="card">
 				<div class="card-action teal lighten-1 white-text">
-					<h3>OTP Verification </h3>
+					<h3>New Wallet Form </h3>
 				</div>
 
 				<div class="card-content">
-					<form action="/otp" method="POST" name="login_form">
-
+					<form action="/wallet/new" method="POST" name="login_form">
+						
 						<div class="input-field">
-							<i class="material-icons prefix">vpn_key</i>
-							<label for="otp">OTP</label>
-							<input type="text" name="otp">
-						</div><br>
-
+							<i class="material-icons prefix">fiber_new</i>
+							<label for="wallet_name">Wallet name</label>
+							<input type="text" name="name">
+						</div>
  						<br>
 
 						<div class="form-field">
-							<button class="btn-large waves-effect waves-dark" style="width:100%;">Submit</button>
+							<button class="btn-large waves-effect waves-dark" style="width:100%;">Create</button>
 						</div>
 
 					</form>

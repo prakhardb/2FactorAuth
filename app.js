@@ -6,24 +6,35 @@ var express     = require("express"),
     LocalStrategy = require("passport-local"),
     speakeasy   = require('speakeasy'),
      QRCode     = require('qrcode'),
+     path       = require("path"),
+     flash      = require("connect-flash"),
      ethers     = require("ethers"),
      Wallet     = ethers.Wallet,
+     Wallets    = require("./models/wallets"),
+     Recaptcha  = require('express-recaptcha').Recaptcha,
+     request    = require('request'),
     pssportLocalMongoose = require("passport-local-mongoose"); 
   
+// import environmental variables from our variables.env file
+require('dotenv').config({ path: 'variables.env' });
     
-mongoose.connect("mongodb://prakhar:prakhar123@ds125841.mlab.com:25841/2fa-auth",{ useNewUrlParser: true });
-
+mongoose.connect(process.env.DATABASE, {useNewUrlParser: true});
 var auth = false;
 var app = express();
 
+//Recaptcha 
+var recaptcha = new Recaptcha(process.env.SITE_KEY, process.env.CAPTCHA_KEY);
+
 app.use(require("express-session")({
-    secret:"this is so beautiful",
+    secret:process.env.SECRET,
     resave: false,
     saveUninitialized: false
 }));
 
 app.set('view engine','ejs');
-app.use(bodyParser.urlencoded({ extende: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(flash());
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -43,32 +54,60 @@ app.get("/home", isAuthen , function(req, res) {
    res.render("home"); 
 });
 
-app.get("/signup", function(req, res) {
-   res.render("signup"); 
+app.get("/signup",recaptcha.middleware.render, function(req, res) {
+    res.render('signup', { 
+         captcha:res.recaptcha 
+    });
 });
 
 app.get("/otp",isLoggedIn, function(req, res) {
     res.render("otp");
 });
 
+app.get('/wallet/new',isAuthen,function(req, res) {
+   res.render("walletNew"); 
+});
+
+app.get('/wallets',isAuthen, function(req, res) {
+    Wallets.find({uid:res.locals.currentUser._id}, function(err,wallets){
+       if(err){
+           console.log(err);
+       } 
+       else{
+           res.render("wallets",{wallets:wallets});
+       }
+    });
+});
+
 var secret;
 //Signup logic
-app.post("/signup", function(req,res){
-    //2 Factor Auth using speakeasy
+app.post("/signup",recaptcha.middleware.verify, function(req,res){
+    // Google recaptcha
+    if (!req.recaptcha.error){
+    // success code
+       //2 Factor Auth using speakeasy
  secret = speakeasy.generateSecret();
-// Returns an object with secret.ascii, secret.hex, and secret.base32.
-// Also returns secret.otpauth_url, which we'll use later.
-User.two_factor_temp_secret = secret.base32;
-// Get the data URL of the authenticator URL
-    User.register(new User({username: req.body.username, secret:secret.base32}), req.body.password, function(err,user){
-        if(err){
-            console.log(err)
-                return res.render("signup");
-            }
-            passport.authenticate("local")(req, res, function(){
-               res.redirect("/token"); 
-            });
-    });
+ // Returns an object with secret.ascii, secret.hex, and secret.base32.
+ // Also returns secret.otpauth_url, which we'll use later.
+ User.two_factor_temp_secret = secret.base32;
+ // Get the data URL of the authenticator URL
+     User.register(new User({username: req.body.username, secret:secret.base32}), req.body.password, function(err,user){
+         if(err){
+             console.log(err)
+                 return res.render("signup");
+             }
+             passport.authenticate("local")(req, res, function(){
+                res.redirect("/token"); 
+             });
+     });
+    }
+else{
+    // error code
+    req.flash("error","Please select the captcha");
+    res.redirect("/signup");
+}
+   
+ 
 });
 
 //Login Logic
@@ -81,6 +120,7 @@ app.post("/login",passport.authenticate("local",
 
 //Logout
 app.get("/logout",function(req,res){
+    auth= false;
    req.logout();
    res.redirect("/");
 });
@@ -117,7 +157,7 @@ app.post('/tokenverify',function(req,res){
          res.redirect("/home");
      }
      else{
-         res.redirect('/token');
+         res.redirect('/signup');
      }
 });
 
@@ -140,7 +180,8 @@ if(verified){
 
 
 function isAuthen(req,res,next){
-    if(isLoggedIn|| (typeof(res.locals.currentUser.auth) !== 'undefined')){
+
+    if(typeof(req.session.passport) !== 'undefined'){
         if(auth){
         return next();    
         }
@@ -155,12 +196,24 @@ function isAuthen(req,res,next){
 }
 
 
-
-/*var privateKey = "x0123456789012345678901234567890123456789012345678901234858890123";
-var wallet = new Wallet(privateKey);
-
-console.log("Address: " + wallet.address);*/
-
+app.post('/wallet/new',isAuthen,function(req, res) {
+var wallet = Wallet.createRandom();
+var walletnew = new Wallets({
+    privateKey : wallet.privateKey,
+ address : wallet.address,
+ mnemonic : wallet.mnemonic,
+ uid : res.locals.currentUser._id,
+ name: req.body.name
+});
+Wallets.create(walletnew, function(err,wallet){
+   if(err){
+       res.render("walletNew");
+   }else{
+       res.redirect('/wallets');
+   }
+   
+});
+});
 app.listen(process.env.PORT, process.env.IP, function(){
     console.log("server started");
 });

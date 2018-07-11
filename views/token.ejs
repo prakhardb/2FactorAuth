@@ -1,6 +1,32 @@
-<img src="<%= url %>" >
-<h2>Scan this code using Google Authenticator App</h2>
-<form action="/tokenverify" method="POST">
-    <input type="text" name="otp" placeholder="Enter OTP">
-    <button>Submit</button>
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Login Page</title>
+
+	 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css">
+
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+</head>
+<body>
+    <center>
+        <div class="container">
+            <div class="card">
+                <div class="card-content">
+                  <img class="responsive-img" src="<%= url %>" >
+                  <h2>Scan this code using Google Authenticator App</h2>
+                    <form action="/tokenverify" method="POST">
+                    <div class="input-field col s6">
+                      <input id="otp" placeholder="Enter OTP" name="otp" type="text" class="validate">
+                        </div><br>
+                    <button class="btn-large waves-effect waves-dark">Submit</button>
 </form>
+</div>
+</div>
+</div>
+</center>
+    
+</body>

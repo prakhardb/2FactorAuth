@@ -1,7 +1,6 @@
-<!DOCTYPE html>
 <html>
 <head>
-	<title>Homepage</title>
+	<title>Wallets</title>
 
 	 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
@@ -13,26 +12,24 @@
 </head>
 <header>
     <a href="/logout" class="btn waves-effect waves-light">Logout</a>
+    <a href="/home" class="btn waves-effect waves-light">Home</a>
 </header>
 <body>
-    	<div class="row">
-		<div class="col s12 m4 offset-m4">
-			<div class="card">
-			    <div class="card-action teal lighten-1 white-text">
-					<h3>Menu </h3>
-				</div>
-			    <div class="card-content">
-			        <a href="/wallet/new" class="btn-large waves-effect waves-dark">New Wallet</a>
-			        <a href="/wallets" class="btn-large waves-effect waves-dark">Show Wallets</a>
-			    </div>
-			</div>
-		</div>
-		</div>
-			    
-    
-    
+<% wallets.forEach(function(wallet) { %>
+<div class="row">
+    <div class="col s12 m6">
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title"><%= wallet.name %></span>
+          <b>Private Key:</b><%= wallet.privateKey %> <br>
+          <b>Address:</b><%= wallet.address %> <br>
+        </div>
+      </div>
+    </div>
+  </div>
+   <% }); %>
 	<!-- Compiled and minified JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js"></script>
 
 </body>
-</html>    
+</html>            
